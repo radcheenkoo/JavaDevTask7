@@ -1,26 +1,23 @@
 package org.example.home.console;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class HttpStatusChecker {
-    public String getStatusImage(int code){
-        String stringUrl = "https://http.cat/" + code + ".jpg";
+    public String getStatusImage(int code) throws IOException {
+        String url = "https://http.cat/" + code + ".jpg";
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        connection.setRequestMethod("HEAD");
+        int respCode = connection.getResponseCode();
 
-        try {
-
-        HttpURLConnection connection = (HttpURLConnection) new URL(stringUrl).openConnection();
-        int responseCode = connection.getResponseCode();
-
-        if(responseCode == 404) {
-            throw new FileNotFoundException(String.format("File with code %s not found!", code));
+        if (respCode == HttpURLConnection.HTTP_OK) {
+            return url;
+        } else if (respCode == HttpURLConnection.HTTP_NOT_FOUND) {
+            throw new RuntimeException("Image not found for HTTP status " + code);
+        } else {
+            throw new RuntimeException("Unexpected response code: " + respCode);
         }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-        return stringUrl;
     }
 }
+

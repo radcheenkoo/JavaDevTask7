@@ -1,37 +1,40 @@
 package org.example.home.console;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.File;
 
 public class HttpStatusImageDownloader {
 
-    public void downloadStatusImage(int code){
-        String url = new HttpStatusChecker().getStatusImage(code);
+    public void downloadStatusImage(int code) throws IOException {
+        HttpStatusChecker checker = new HttpStatusChecker();
+        String imageUrl = checker.getStatusImage(code);
 
-        try( InputStream in = new URL(url).openStream()) {
+        URL url = new URL(imageUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
-            String path = "cats/" + code + ".jpg";
-
-            if (!new File(path).exists()) {
-
-                Files.copy(in, Paths.get(path));
-            } else {
-
-                System.out.println(String.format("File with code %s already exist!", code));
+        try (InputStream in = connection.getInputStream()) {
+            File file = new File("cats");
+            if (!file.exists()) {
+                file.mkdir();
             }
-        } catch(Exception e) {
-            try {
 
-                throw new FileNotFoundException(String.format("File with code %s not found!", code));
-            } catch (FileNotFoundException ex) {
+            Path path = Paths.get("cats", code + ".jpg");
+            FileOutputStream out = new FileOutputStream(path.toString());
 
-                throw new RuntimeException(ex);
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
             }
+
+            System.out.println("Image downloaded successfully: " + path.toAbsolutePath());
         }
-
     }
 }
